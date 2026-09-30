@@ -26,6 +26,19 @@ python3 -m http.server 8000
 
 `S` 编号仅供查找，不加入文化路线。店址及坐标已参考 Google 地图核对；银河 Blooom 仅以商场区域示意，历史资料列 K110，同名 Google 地图条目暂未找到。尚未确认具体分店的收藏保留卡片，不猜测坐标。
 
+## 南段与东段补充店铺
+
+收藏共 18 家，其中 17 处已定位。2026-09-30 新增四家，店址参考旅游局／门店官网，坐标核对 Google 地图；推荐菜与路线关系显示在店铺卡片及地图详情中。
+
+| 标记 | 店铺 | 路线关系 | 资料 |
+| --- | --- | --- | --- |
+| S15 | 船屋葡国餐厅 A Lorcha | 南段，1 妈阁庙附近 | [米其林](https://guide.michelin.com/us/en/macau-region/macau/restaurant/a-lorcha) |
+| S16 | 吴廷记糕饼小食 | 南段，5 圣老楞佐附近，绕入下环街 | [澳门旅游局](https://www.macaotourism.gov.mo/zh-hant/step-out-macao/central) |
+| S17 | Rethink Coffee Roasters · 皇朝店 | 东段向皇朝区延伸，非路线内店铺 | [门店地址](https://www.rethinkcoffeeroasters.com/contact.html) |
+| S18 | 新口岸葡国餐 Porto Exterior | 东段向皇朝区延伸，邻近利澳酒店 | [门店地址](https://www.portoexterior.com/location) |
+
+两家皇朝店从 20 美高梅前往均需额外绕行；地图位置关系不是步行导航。Rethink 官网列营业时间为 08:00–18:00；吴廷记冷糕属季节性供应。
+
 ## 2026 烟花观赏
 
 - 燃放海域：澳门旅游塔对出海面，`F` 标记为海域示意，非烟花船的精确位置。

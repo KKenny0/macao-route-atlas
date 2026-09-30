@@ -1,6 +1,6 @@
 const mapLink=s=>s.mapUrl||`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((s.n||s.name)+' '+(s.address||'澳门'))}`;
-const groups=['咖啡与茶','本地小吃','路氹餐饮'];
-document.getElementById('store-groups').innerHTML=groups.map(g=>`<div class="store-group"><h3>${g}</h3><div class="store-grid">${shops.filter(s=>s.g===g).map(s=>`<article class="store"><span class="store-number">${s.label}</span><div><strong>${s.n}${s.extra?'<i class="store-flag">另列分店</i>':''}</strong><small>${s.address}</small><div class="store-actions"><button type="button" data-locate="${s.id}" ${Number.isFinite(s.lat)?'':'disabled'}>${Number.isFinite(s.lat)?'地图定位':'店址待确认'}</button><a href="${mapLink(s)}" target="_blank" rel="noreferrer">Google 地图 ↗</a></div></div></article>`).join('')}</div></div>`).join('');
+const groups=['咖啡与茶','本地小吃','澳门葡餐','路氹餐饮'];
+document.getElementById('store-groups').innerHTML=groups.map(g=>`<div class="store-group"><h3>${g}</h3><div class="store-grid">${shops.filter(s=>s.g===g).map(s=>`<article class="store"><span class="store-number">${s.label}</span><div><strong>${s.n}${s.extra?'<i class="store-flag">另列分店</i>':''}</strong><small>${s.address}</small>${s.note?`<small>${s.note}</small>`:''}<div class="store-actions"><button type="button" data-locate="${s.id}" ${Number.isFinite(s.lat)?'':'disabled'}>${Number.isFinite(s.lat)?'地图定位':'店址待确认'}</button><a href="${mapLink(s)}" target="_blank" rel="noreferrer">Google 地图 ↗</a></div></div></article>`).join('')}</div></div>`).join('');
 document.getElementById('fireworks-schedule').innerHTML=fireworks.dates.map(d=>`<article><span>${Number(d.date.slice(5,7))} 月 ${Number(d.date.slice(8))} 日 · ${d.label}</span><strong>${d.times.join(' <i>／</i> ')}</strong><small>${d.teams}${d.closingDrone?'；'+d.closingDrone+' 另有无人机闭幕表演':''}</small></article>`).join('');
 const fireworkTimes=fireworks.dates.map(d=>`${Number(d.date.slice(5,7))}/${Number(d.date.slice(8))} · ${d.times.join(' / ')}`).join('；');
 document.getElementById('firework-views').innerHTML=fireworks.views.map(s=>`<button type="button" data-locate="${s.id}"><b>${s.label}</b><span>${s.name}<small>${s.note}</small></span><em>↗</em></button>`).join('');
@@ -67,7 +67,7 @@ function setZoom(value){zoom=Math.max(.3,Math.min(8,value))}
 function panTo(p){const q=project(p,0,camera());panX+=W/2-q[0];panY+=(document.querySelector('.map-top').offsetHeight+25+H-110)/2-q[1]}
 function shopGroups(C){
  const groups=mappedShops.map(s=>[s]);
- // ponytail: pairwise screen-distance grouping is bounded to 13 shops; use a spatial index for large collections.
+ // ponytail: pairwise screen-distance grouping is bounded to 17 shops; use a spatial index for large collections.
  if(zoom<8)for(let i=0;i<groups.length;i++)for(let j=i+1;j<groups.length;j++){
    if([...groups[i],...groups[j]].some(s=>s.id===selected&&!document.getElementById('map-detail').hidden))continue;
    if(groups[i].some(a=>groups[j].some(b=>{const p=project(a.p,62,C),q=project(b.p,62,C);return Math.hypot(p[0]-q[0],p[1]-q[1])<48}))){groups[i].push(...groups.splice(j,1)[0]);i=-1;break}

@@ -24,7 +24,15 @@ def test_public_page():
     assert all(stop["source"].startswith("https://") and len(stop["story"]) >= 2 for stop in route)
 
     shops, _ = json.JSONDecoder().raw_decode(content.split("const shops=", 1)[1])
-    assert [shop["id"] for shop in shops] == [f"shop-{i}" for i in range(1, 15)]
+    assert [shop["id"] for shop in shops] == [f"shop-{i}" for i in range(1, 19)]
+    assert [shop["label"] for shop in shops] == [f"S{i}" for i in range(1, 19)]
+    assert "18 家收藏，17 处已定位" in html
+    app = (ROOT / "src/app.js").read_text(encoding="utf-8")
+    groups = re.search(r"const groups=(\[[^;]+\]);", app).group(1)
+    groups = json.loads(groups.replace("'", '"'))
+    assert all(shop["g"] in groups for shop in shops), "A shop category is missing from the list"
+    assert len([shop for shop in shops if shop["lat"] is not None]) == 17
+    assert all(shop["note"] and shop["mapUrl"] for shop in shops[14:])
     assert all(shop["kind"] == "shop" and shop["address"] for shop in shops)
     for shop in shops:
         if shop["lat"] is None:
