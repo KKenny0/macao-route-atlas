@@ -33,27 +33,42 @@ function camera(){
 function project(p,z,C){let x=p[0]-C.center[0],y=p[1]-C.center[1],cs=Math.cos(angle),sn=Math.sin(angle),xr=x*cs-y*sn,yr=x*sn+y*cs,ct=Math.cos(C.tilt),st=Math.sin(C.tilt),f=4300/(4300+yr*st-z*ct);return [W/2+panX+(C.offsetX||0)+xr*C.scale*f,H/2+panY+(C.offsetY||0)-(yr*ct+z*st)*C.scale*f]}
 function path(points,z,C){ctx.beginPath();let started=false;for(const p of points){if(!p){started=false;continue}let q=project(p,z,C);if(!started){ctx.moveTo(q[0],q[1]);started=true}else ctx.lineTo(q[0],q[1])}}
 // ponytail: local marker offsets work for this small collection; use clustering if it grows.
-function markerLocation(q,used){const candidates=[[0,0],[0,-30],[30,0],[-30,0],[0,30],[30,-30],[-30,-30],[38,18],[-38,18],[0,-55],[0,55],[55,-30],[-55,-30],[30,55],[-30,55]];let best=q,bestScore=-1e9;const top=document.querySelector('.map-top').offsetHeight+25;for(const [dx,dy] of candidates){let x=q[0]+dx,y=q[1]+dy,closest=used.length?Math.min(...used.map(p=>Math.hypot(p[0]-x,p[1]-y))):100;let edge=Math.min(x-20,W-x-20,y-top,H-y-65);let score=Math.min(closest,38)-Math.hypot(dx,dy)*.22+(edge<0?edge*2:0);if(score>bestScore){bestScore=score;best=[x,y]}}used.push(best);return best}
+function markerLocation(q,used){
+ const top=document.querySelector('.map-top').offsetHeight+25;
+ const candidates=[];
+ for(let x=-3;x<=3;x++)for(let y=-3;y<=3;y++)candidates.push([q[0]+x*42,q[1]+y*42]);
+ // A viewport grid gives dense overviews somewhere to place labels without covering tools.
+ for(let x=22;x<W-22;x+=42)for(let y=top;y<H-110;y+=42)candidates.push([x,y]);
+ let best=q,bestScore=-Infinity;
+ for(const [x,y] of candidates){
+   const closest=used.length?Math.min(...used.map(p=>Math.hypot(p[0]-x,p[1]-y))):100;
+   const edge=Math.min(x-22,W-x-22,y-top,H-y-110);
+   if(edge<0)continue;
+   const score=Math.min(closest,42)-Math.hypot(x-q[0],y-q[1])*.1-Math.max(0,42-closest)*10;
+   if(score>bestScore){bestScore=score;best=[x,y]}
+ }
+ used.push(best);return best;
+}
 const markerButtons=new Map();
 for(const s of allPlaces){
  const button=document.createElement('button');button.type='button';
  button.className='map-marker '+(s.kind|| (s.id==='hotel'?'hotel':'route'));
  button.textContent=s.label||s.id;button.hidden=true;
  button.setAttribute('aria-label',`${s.label||s.id} · ${s.n||s.name}，${typeof s.id==='number'?'阅读历史':'查看地点'}`);
- button.onclick=()=>typeof s.id==='number'?openHistory(s.id):select(s.id,true);
+ button.onclick=()=>typeof s.id==='number'?openHistory(s.id):locate(s.id);
  markerButtons.set(s.id,button);document.getElementById('map-markers').append(button);
 }
-function draw(){if(!W)return;const C=camera();ctx.setTransform(dpr,0,0,dpr,0,0);let bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#25505a');bg.addColorStop(1,'#0a2635');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
- for(const [r,p] of streets){path(p,0,C);ctx.lineWidth=r<2?Math.max(2.1,8*C.scale):r<4?Math.max(1.2,5*C.scale):Math.max(.65,2.5*C.scale);ctx.strokeStyle=r<3?'rgba(241,239,217,.23)':'rgba(212,225,208,.10)';ctx.stroke()}
- for(const p of shores){path(p,0,C);ctx.lineWidth=1.7;ctx.strokeStyle='rgba(122,220,221,.34)';ctx.stroke()}
- for(const b of buildings){let p=b.p;if(p.length<4)continue;let bottom=p.map(q=>project(q,0,C)),top=p.map(q=>project(q,b.h,C));for(let i=0;i<p.length-1;i++){ctx.beginPath();ctx.moveTo(bottom[i][0],bottom[i][1]);ctx.lineTo(bottom[i+1][0],bottom[i+1][1]);ctx.lineTo(top[i+1][0],top[i+1][1]);ctx.lineTo(top[i][0],top[i][1]);ctx.closePath();ctx.fillStyle=i%2?'rgba(80,124,122,.43)':'rgba(68,112,113,.52)';ctx.fill()}ctx.beginPath();top.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.closePath();ctx.fillStyle='rgba(180,201,173,.34)';ctx.fill()}
- let seq=active();ctx.beginPath();seq.forEach((s,i)=>{let q=project(s.p,30,C);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])});ctx.strokeStyle='#c9eb86';ctx.globalAlpha=.22;ctx.lineWidth=11;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();ctx.globalAlpha=.95;ctx.setLineDash([7,5]);ctx.lineWidth=2.7;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+function draw(){if(!W)return;const C=camera();ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#102c38';ctx.fillRect(0,0,W,H);
+ for(const [r,p] of streets){path(p,0,C);ctx.lineCap='round';ctx.lineJoin='round';const width=r<2?Math.max(2,7*C.scale):r<4?Math.max(1,4*C.scale):Math.max(.5,2*C.scale);if(r<3){ctx.lineWidth=width+2;ctx.strokeStyle='#193b47';ctx.stroke()}ctx.lineWidth=width;ctx.strokeStyle=r<2?'#698080':r<4?'#3f626a':'#274954';ctx.stroke()}
+ for(const p of shores){path(p,0,C);ctx.lineWidth=2;ctx.strokeStyle='#54848a';ctx.stroke()}
+ for(const b of buildings){let p=b.p;if(p.length<4)continue;let bottom=p.map(q=>project(q,0,C)),top=p.map(q=>project(q,b.h,C));for(let i=0;i<p.length-1;i++){ctx.beginPath();ctx.moveTo(bottom[i][0],bottom[i][1]);ctx.lineTo(bottom[i+1][0],bottom[i+1][1]);ctx.lineTo(top[i+1][0],top[i+1][1]);ctx.lineTo(top[i][0],top[i][1]);ctx.closePath();ctx.fillStyle=i%2?'rgba(72,106,108,.80)':'rgba(40,76,86,.85)';ctx.fill()}ctx.beginPath();top.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.closePath();ctx.fillStyle='rgba(180,199,172,.62)';ctx.fill();ctx.strokeStyle='rgba(201,217,189,.22)';ctx.lineWidth=.5;ctx.stroke()}
+ let seq=active();ctx.beginPath();seq.forEach((s,i)=>{let q=project(s.p,30,C);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])});ctx.strokeStyle='#c9eb86';ctx.globalAlpha=.13;ctx.lineWidth=10;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();ctx.globalAlpha=.95;ctx.setLineDash([7,5]);ctx.lineWidth=2.7;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
  if(stage==='fireworks'){
    path(fireworks.views[4].coast.map(p=>toWorld(...p)),0,C);
    ctx.strokeStyle='#d8b9ff';ctx.lineWidth=5;ctx.stroke();
  }
  hits=[];const used=[];
- const visible=[...seq,hotel,...(stage==='fireworks'?fireworkPlaces:mappedShops)];
+ const visible=[...seq,hotel,...(stage==='fireworks'?fireworkPlaces:stage==='shops'?mappedShops:[])];
  for(const button of markerButtons.values())button.hidden=true;
  for(const s of visible){
    const foot=project(s.p,0,C),origin=project(s.p,62,C);
@@ -82,6 +97,7 @@ function select(id,showPopup=false){
  document.getElementById('map-detail').hidden=!showPopup;
  document.getElementById('map-place').value=String(id);
  document.querySelectorAll('.route-row').forEach(b=>b.classList.toggle('selected',b.dataset.routeId===String(id)));
+ document.querySelectorAll('[data-locate]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.locate===String(id))));
  draw();
 }
 function locate(id){
@@ -91,27 +107,43 @@ function locate(id){
  if(s.kind==='shop')zoom=2.2;
  const q=project(s.p,62,camera());panX=W*.43-q[0];panY=H*.44-q[1];
  select(s.id,true);
- if(!mapExpanded())mapPanel.scrollIntoView({block:'start',behavior:'instant'});
+ // The map and list already share a workspace; selecting a place keeps the page still.
  document.getElementById('map-detail-close').focus({preventScroll:true});
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-locate]');if(b)locate(b.dataset.locate)});
-document.querySelector('[data-view-fireworks]').onclick=()=>{setStage('fireworks');mapPanel.scrollIntoView({block:'start',behavior:'instant'});fullscreenButton.focus({preventScroll:true})};
+
 document.getElementById('map-place').onchange=e=>locate(e.target.value);
 document.getElementById('map-detail-close').onclick=()=>{document.getElementById('map-detail').hidden=true;markerButtons.get(selected)?.focus({preventScroll:true})};
 
 const stageNames={1:'南段 · 内港与山城',2:'老城 · 世界遗产',3:'东段 · 新口岸'};
 document.getElementById('route-list').innerHTML=route.map(s=>`<button type="button" class="route-row" data-route-id="${s.id}" aria-label="路线第 ${s.id} 站 ${s.name}，打开完整历史档案"><span class="route-no">${s.id}</span><span>${s.name}<small class="section-label">${stageNames[s.stage]}</small></span></button>`).join('');document.querySelectorAll('.route-row').forEach(b=>b.onclick=()=>{let s=route.find(x=>x.id===Number(b.dataset.routeId));openHistory(s.id)});
-function setStage(v){stage=v;zoom=1;panX=panY=0;document.querySelectorAll('.stage-tabs button').forEach(b=>{b.classList.toggle('active',b.dataset.stage===v);b.setAttribute('aria-pressed',b.dataset.stage===v?'true':'false')});select(v==='shops'?shops[0].id:v==='fireworks'?fireworks.launch.id:active()[0].id)}
+function setStage(v){
+ stage=v;zoom=1;panX=panY=0;
+ const view=v==='shops'||v==='fireworks'?v:'route';
+ document.querySelectorAll('[data-view]').forEach(b=>{const on=b.dataset.view===view;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1});
+ for(const [name,id] of [['route','panel-route'],['shops','stores'],['fireworks','fireworks']])document.getElementById(id).hidden=name!==view;
+ document.querySelector('.stage-tabs').hidden=view!=='route';
+ document.getElementById('map-caption').textContent=view==='shops'?'澳门半岛 · 氹仔 · 路氹':view==='fireworks'?'旅游塔海域 · 5 处观赏区域':'妈阁庙 → 美高梅';
+ document.querySelectorAll('.stage-tabs button').forEach(b=>{b.classList.toggle('active',b.dataset.stage===v);b.setAttribute('aria-pressed',String(b.dataset.stage===v))});
+ document.querySelectorAll('.route-row').forEach(b=>b.hidden=view==='route'&&v!=='all'&&route[Number(b.dataset.routeId)-1].stage!==Number(v));
+ select(v==='shops'?mappedShops[0].id:v==='fireworks'?fireworks.launch.id:active()[0].id);
+}
+const viewTabs=[...document.querySelectorAll('[data-view]')];
+viewTabs.forEach((b,i)=>{
+ const activate=()=>{setStage(b.dataset.view==='route'?'all':b.dataset.view);if(mapPanel.getBoundingClientRect().top<0&&!mapExpanded())mapPanel.scrollIntoView({block:'start',behavior:'instant'})};
+ b.onclick=activate;
+ b.addEventListener('keydown',e=>{let next;if(e.key==='ArrowRight')next=(i+1)%viewTabs.length;else if(e.key==='ArrowLeft')next=(i+viewTabs.length-1)%viewTabs.length;else if(e.key==='Home')next=0;else if(e.key==='End')next=viewTabs.length-1;else return;e.preventDefault();viewTabs[next].focus({preventScroll:true});viewTabs[next].click()});
+});
 document.querySelectorAll('.stage-tabs button').forEach(b=>b.onclick=()=>setStage(b.dataset.stage));document.querySelectorAll('.controls button').forEach(b=>b.onclick=()=>{switch(b.dataset.control){case'rotate':angle+=Math.PI/9;break;case'tilt':tilted=!tilted;b.textContent=tilted?'2D':'3D';break;case'minus':zoom=Math.max(.65,zoom/1.2);break;case'plus':zoom=Math.min(3,zoom*1.2);break;case'reset':reset();return}draw()});
 canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);let r=canvas.getBoundingClientRect();pointers.set(e.pointerId,{x:e.clientX-r.left,y:e.clientY-r.top});tap=pointers.size===1?{x:e.clientX-r.left,y:e.clientY-r.top,moved:false}:null;if(pointers.size>1)pinch=null});
 canvas.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;let r=canvas.getBoundingClientRect(),p={x:e.clientX-r.left,y:e.clientY-r.top},old=pointers.get(e.pointerId);pointers.set(e.pointerId,p);if(pointers.size===1){if(tap&&Math.hypot(p.x-tap.x,p.y-tap.y)>6)tap.moved=true;panX+=p.x-old.x;panY+=p.y-old.y;schedule()}else if(pointers.size===2){let a=[...pointers.values()],dist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),mid={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2};if(pinch){zoom=Math.max(.65,Math.min(3,zoom*dist/pinch.dist));panX+=mid.x-pinch.mid.x;panY+=mid.y-pinch.mid.y;schedule()}pinch={dist,mid}}});
-function pointerEnd(e){if(!pointers.has(e.pointerId))return;pointers.delete(e.pointerId);if(pointers.size<2)pinch=null;if(pointers.size===0&&tap&&!tap.moved){let r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,near=hits.map(h=>({...h,d:Math.hypot(h.x-x,h.y-y)})).sort((a,b)=>a.d-b.d)[0];if(near&&near.d<28){if(typeof near.id==='number')openHistory(near.id);else select(near.id,true)}}tap=null}canvas.addEventListener('pointerup',pointerEnd);canvas.addEventListener('pointercancel',pointerEnd);
+function pointerEnd(e){if(!pointers.has(e.pointerId))return;pointers.delete(e.pointerId);if(pointers.size<2)pinch=null;if(pointers.size===0&&tap&&!tap.moved){let r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,near=hits.map(h=>({...h,d:Math.hypot(h.x-x,h.y-y)})).sort((a,b)=>a.d-b.d)[0];if(near&&near.d<28){if(typeof near.id==='number')openHistory(near.id);else locate(near.id)}}tap=null}canvas.addEventListener('pointerup',pointerEnd);canvas.addEventListener('pointercancel',pointerEnd);
 canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.65,Math.min(3,zoom*(e.deltaY>0?.91:1.09)));schedule()},{passive:false});canvas.addEventListener('keydown',e=>{let handled=true;if(e.key==='ArrowLeft')panX+=25;else if(e.key==='ArrowRight')panX-=25;else if(e.key==='ArrowUp')panY+=25;else if(e.key==='ArrowDown')panY-=25;else if(e.key==='+'||e.key==='=')zoom=Math.min(3,zoom*1.18);else if(e.key==='-')zoom=Math.max(.65,zoom/1.18);else if(e.key.toLowerCase()==='r')reset();else handled=false;if(handled){e.preventDefault();draw()}});
 
 const historyOverlay=document.getElementById('history-overlay');let historyOpenId=null,historyReturnFocus=null;
 function renderHistory(id){const s=route[id-1];if(!s)return;historyOpenId=id;document.getElementById('history-kicker').textContent=`沿途档案 · ${String(id).padStart(2,'0')} / 20 · ${stageNames[s.stage]}`;document.getElementById('history-title').textContent=s.name;document.getElementById('history-era').textContent=s.era;document.getElementById('history-dek').textContent=s.dek;document.getElementById('history-prose').innerHTML=s.story.map(p=>`<p>${p}</p>`).join('');document.getElementById('history-source').innerHTML=`资料来源：<a href="${s.source}" target="_blank" rel="noreferrer">${s.sourceLabel} ↗</a><br>文字据资料整理；街道与现代酒店的沿革按各自来源表述。`;document.getElementById('history-count').textContent=`${String(id).padStart(2,'0')} / 20`;document.getElementById('history-prev').disabled=id===1;document.getElementById('history-next').disabled=id===20;document.getElementById('history-scroll').scrollTop=0}
-function openHistory(id){const s=route[id-1];if(!s)return;const firstOpen=historyOverlay.hidden;if(firstOpen)historyReturnFocus=document.activeElement;if(stage!=='all'&&stage!==String(s.stage))setStage(String(s.stage));select(id);renderHistory(id);[...mapPanel.children].filter(e=>e!==historyOverlay).forEach(e=>e.inert=true);historyOverlay.hidden=false;document.body.classList.add('history-active');if(firstOpen)document.getElementById('history-close').focus()}
-function closeHistory(){if(historyOverlay.hidden)return;historyOverlay.hidden=true;[...mapPanel.children].forEach(e=>e.inert=false);historyOpenId=null;document.body.classList.remove('history-active');historyReturnFocus?.focus?.()}
+function openHistory(id){const s=route[id-1];if(!s)return;const firstOpen=historyOverlay.hidden;if(firstOpen)historyReturnFocus=document.activeElement;if(stage!=='all'&&stage!==String(s.stage))setStage(String(s.stage));select(id);renderHistory(id);[...document.querySelector('.map-surface').children].filter(e=>e!==historyOverlay).forEach(e=>e.inert=true);document.querySelector('.workspace-nav').inert=true;document.querySelector('.route-panel').inert=true;historyOverlay.hidden=false;document.body.classList.add('history-active');if(firstOpen)document.getElementById('history-close').focus()}
+function closeHistory(){if(historyOverlay.hidden)return;historyOverlay.hidden=true;[...document.querySelector('.map-surface').children].forEach(e=>e.inert=false);document.querySelector('.workspace-nav').inert=false;document.querySelector('.route-panel').inert=false;historyOpenId=null;document.body.classList.remove('history-active');historyReturnFocus?.focus?.()}
 document.getElementById('history-close').onclick=closeHistory;
 historyOverlay.addEventListener('click',e=>{if(e.target===historyOverlay)closeHistory()});
 document.getElementById('history-prev').onclick=()=>{if(historyOpenId>1)openHistory(historyOpenId-1)};
@@ -120,15 +152,9 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-open-histo
 document.addEventListener('keydown',e=>{if(historyOverlay.hidden)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();closeHistory();return}if(e.key!=='Tab')return;const items=[...historyOverlay.querySelectorAll('button:not(:disabled),a[href]')];const first=items[0],last=items[items.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}});
 const mapPanel=document.getElementById('map-panel'),fullscreenButton=document.getElementById('fullscreen-toggle');
 let pageFullscreen=false;
-const mapExpanded=()=>pageFullscreen||document.fullscreenElement===mapPanel;
+const mapExpanded=()=>pageFullscreen;
 function syncFullscreen(){const expanded=mapExpanded();mapPanel.classList.toggle('map-expanded',expanded);document.body.classList.toggle('map-fullscreen',expanded);fullscreenButton.textContent=expanded?'⛶ 退出全屏':'⛶ 全屏';fullscreenButton.setAttribute('aria-label',expanded?'退出地图全屏':'全屏展开地图');fullscreenButton.setAttribute('aria-pressed',String(expanded));if(!expanded)fullscreenButton.focus({preventScroll:true})}
-fullscreenButton.onclick=async()=>{
- if(document.fullscreenElement===mapPanel){await document.exitFullscreen();return}
- if(pageFullscreen){pageFullscreen=false;syncFullscreen();return}
- // ponytail: native fullscreen where available; CSS expansion covers mobile browsers without it.
- if(mapPanel.requestFullscreen&&document.fullscreenEnabled){try{await mapPanel.requestFullscreen();return}catch{}}
- pageFullscreen=true;syncFullscreen();
-};
-document.addEventListener('fullscreenchange',syncFullscreen);
+// Expand the workspace in the page so tabs and details stay available on every browser.
+fullscreenButton.onclick=()=>{pageFullscreen=!pageFullscreen;syncFullscreen()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&historyOverlay.hidden){if(!document.getElementById('map-detail').hidden){document.getElementById('map-detail-close').click();e.preventDefault()}else if(pageFullscreen){pageFullscreen=false;syncFullscreen();e.preventDefault()}}});
-select(1);
+setStage('all');

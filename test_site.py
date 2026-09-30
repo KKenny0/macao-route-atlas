@@ -56,12 +56,18 @@ function element(){return {
 }}
 const get=id=>{if(!nodes.has(id))nodes.set(id,element());return nodes.get(id)};
 const ctx=new Proxy({createLinearGradient:()=>({addColorStop(){}})}, {get:(o,k)=>o[k]||(()=>{})});
+let size={width:800,height:710};
 get('route-map').getContext=()=>ctx;
+get('route-map').getBoundingClientRect=()=>size;
 get('history-overlay').hidden=true;
 get('map-panel').children=[get('route-map'),get('map-markers'),get('history-overlay')];
-const document={getElementById:get,createElement:element,querySelector:()=>element(),querySelectorAll:()=>[],body:element(),activeElement:element(),fullscreenEnabled:false,
+const surface=element();surface.children=get('map-panel').children;
+const stageTabs=element(), nav=element(), sidebar=element();
+const tabs=['route','shops','fireworks'].map(view=>{const e=element();e.dataset.view=view;return e});
+const rows=Array.from({length:20},(_,i)=>{const e=element();e.dataset.routeId=String(i+1);return e});
+const document={getElementById:get,createElement:element,querySelector:s=>s==='.map-surface'?surface:s==='.stage-tabs'?stageTabs:s==='.workspace-nav'?nav:s==='.route-panel'?sidebar:element(),querySelectorAll:s=>s==='[data-view]'?tabs:s==='.route-row'?rows:[],body:element(),activeElement:element(),fullscreenEnabled:false,
  addEventListener(name,fn){if(!listeners.has(name))listeners.set(name,[]);listeners.get(name).push(fn)}};
-const sandbox={document,console,ResizeObserver:class{observe(){}},devicePixelRatio:1,requestAnimationFrame:()=>0};
+const sandbox={document,console,size,ResizeObserver:class{observe(){}},devicePixelRatio:1,requestAnimationFrame:()=>0};
 vm.createContext(sandbox);
 for(const file of ['data/map.js','data/content.js','src/app.js'])vm.runInContext(fs.readFileSync(file,'utf8'),sandbox);
 vm.runInContext(`
@@ -69,34 +75,45 @@ vm.runInContext(`
  for(const v of ['all','1','2','3','shops','fireworks']){
    setStage(v);const c=camera();if(!Number.isFinite(c.scale)||c.scale<=0)throw Error('Invalid camera: '+v);
    if(v==='shops'&&hits.filter(h=>String(h.id).startsWith('shop-')).length!==mappedShops.length)throw Error('Store overview clipped markers');
+   const view=v==='shops'||v==='fireworks'?v:'route';
+   for(const [name,id] of [['route','panel-route'],['shops','stores'],['fireworks','fireworks']]){
+     if(document.getElementById(id).hidden!==(name!==view))throw Error('Wrong linked panel: '+v);
+   }
+   if(view==='route'&&hits.some(h=>String(h.id).startsWith('shop-')))throw Error('Route markers mixed with shop view');
+   if(view==='route'&&document.querySelectorAll('.route-row').filter(r=>!r.hidden).length!==active().length)throw Error('Route segment list mismatch');
  }
  if(hits.filter(h=>String(h.id).startsWith('view-')).length!==5)throw Error('Missing viewing marker');
+ for(const [width,height] of [[320,400],[375,400],[760,600],[800,710]]){
+   size.width=width;size.height=height;resize();
+   for(const view of ['all','shops','fireworks']){
+     setStage(view);
+     const count=view==='all'?hits.filter(h=>typeof h.id==='number').length:view==='shops'?hits.filter(h=>String(h.id).startsWith('shop-')).length:hits.filter(h=>String(h.id).startsWith('view-')).length;
+     if(count!==(view==='all'?20:view==='shops'?mappedShops.length:5))throw Error('Clipped markers at '+width+' / '+view);
+     for(let i=0;i<hits.length;i++)for(let j=i+1;j<hits.length;j++){
+       if(Math.hypot(hits[i].x-hits[j].x,hits[i].y-hits[j].y)<39.9)throw Error('Overlapping marker targets at '+width+' / '+view);
+     }
+   }
+ }
+ size.width=800;size.height=710;resize();
  for(const s of mappedShops){locate(s.id);if(selected!==s.id||!hits.some(h=>h.id===s.id))throw Error('Store not reachable: '+s.id)}
  setStage('all');openHistory(13);
  if(historyOverlay.hidden||historyOpenId!==13)throw Error('History did not open');
+ if(!document.querySelector('.workspace-nav').inert||!document.querySelector('.route-panel').inert)throw Error('History background remained interactive');
  closeHistory();if(!historyOverlay.hidden)throw Error('History did not close');
+ if(document.querySelector('.workspace-nav').inert||document.querySelector('.route-panel').inert)throw Error('History did not restore background');
 `,sandbox);
 (async()=>{
  await get('fullscreen-toggle').onclick();
  assert.equal(vm.runInContext('mapExpanded()',sandbox),true);
  await get('fullscreen-toggle').onclick();
  assert.equal(vm.runInContext('mapExpanded()',sandbox),false);
- // A rejected native request must still expand the map.
- document.fullscreenEnabled=true;
- get('map-panel').requestFullscreen=()=>Promise.reject(Error('Unavailable'));
+ // Escape exits the expanded workspace after any place detail closes.
  await get('fullscreen-toggle').onclick();
  assert.equal(vm.runInContext('pageFullscreen',sandbox),true);
  vm.runInContext("document.getElementById('map-detail').hidden=true",sandbox);
  for(const fn of listeners.get('keydown'))fn({key:'Escape',preventDefault(){}});
  assert.equal(vm.runInContext('mapExpanded()',sandbox),false);
- get('map-panel').requestFullscreen=async()=>{document.fullscreenElement=get('map-panel');for(const fn of listeners.get('fullscreenchange'))fn()};
- document.exitFullscreen=async()=>{document.fullscreenElement=null;for(const fn of listeners.get('fullscreenchange'))fn()};
- await get('fullscreen-toggle').onclick();
- assert.equal(vm.runInContext('mapExpanded()',sandbox),true);
- assert.equal(vm.runInContext('pageFullscreen',sandbox),false);
- await get('fullscreen-toggle').onclick();
- assert.equal(vm.runInContext('mapExpanded()',sandbox),false);
- console.log('Map views, shop reachability, history and fullscreen fallback passed');
+ console.log('Linked panels, marker reachability, history and workspace expansion passed');
 })().catch(e=>{console.error(e);process.exitCode=1});
 '''], cwd=ROOT, text=True, capture_output=True)
     assert result.returncode == 0, result.stdout + result.stderr

@@ -1,3 +1,61 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>澳门立体路线地图｜20 站城市漫游</title><meta name="description" content="按指定顺序的20站澳门历史城区路线，收藏店铺独立呈现"><link rel="stylesheet" href="./src/styles.css"></head><body><main class="wrap"><header class="hero"><div><div class="eyebrow">MACAO / HERITAGE WALK</div><h1>一条文化路线，独立的店铺收藏</h1><p>20 站文化路线，搭配独立的店铺收藏与烟花观赏地点。点击标记查看地点信息，也可以全屏展开地图。</p></div><a class="hotel-chip" href="https://all.accor.com/hotel/6480/index.zh.shtml" target="_blank" rel="noreferrer"><b>H</b><span>澳门十六浦索菲特酒店<br><small>地图独立标记</small></span></a></header><section class="route-section"><div class="section-intro"><div><span class="eyebrow">01 / THE ONLY ROUTE</span><h2>妈阁庙 → 美高梅</h2></div><p>拖动平移，双指或滚轮缩放。路线可按三段查看；切换“店铺全览”或“烟花观赏”，查看独立地点。</p></div><div class="route-layout"><div class="map-panel" id="map-panel"><div class="map-top"><div class="stage-tabs" role="group" aria-label="地图查看范围"><button type="button" class="active" data-stage="all" aria-pressed="true">全程 ①—⑳</button><button type="button" data-stage="1" aria-pressed="false">南段 ①—⑥</button><button type="button" data-stage="2" aria-pressed="false">老城 ⑦—⑭</button><button type="button" data-stage="3" aria-pressed="false">东段 ⑮—⑳</button><button type="button" data-stage="shops" aria-pressed="false">店铺全览</button><button type="button" data-stage="fireworks" aria-pressed="false">烟花观赏</button></div><div class="map-tools"><button type="button" id="fullscreen-toggle" aria-label="全屏展开地图" aria-pressed="false">⛶ 全屏</button><label class="place-picker">选择地点<select id="map-place" aria-label="选择地图地点"><option value="">选择地点…</option></select></label></div></div><canvas id="route-map" tabindex="0" aria-label="澳门立体地图，可拖动、缩放；地点也可通过选择地点菜单访问"></canvas><div id="map-markers" class="map-markers"></div><section id="map-detail" class="map-detail detail" aria-label="选中地点详情" hidden><button type="button" id="map-detail-close" aria-label="关闭地点详情">×</button><div id="map-detail-body" aria-live="polite"></div></section><div class="map-bottom"><b>●</b> 文化路线　<span style="color:var(--cyan)">■</span> 酒店 H<br><span class="shop-key">■</span> 店铺 S　<span class="firework-key">◆</span> 烟花 F / V<small>线段表示站点顺序，实际步行线路与出入口请用实时导航核对。</small></div><div class="controls"><button type="button" data-control="rotate" aria-label="旋转地图">↻</button><button type="button" data-control="tilt" aria-label="切换俯视角">2D</button><button type="button" data-control="minus" aria-label="缩小地图">−</button><button type="button" data-control="plus" aria-label="放大地图">＋</button><button type="button" data-control="reset" aria-label="重置地图视角">⌖</button></div><div class="history-overlay" id="history-overlay" hidden><section class="history-sheet" role="dialog" aria-modal="true" aria-labelledby="history-title"><header class="history-head"><div><div class="history-kicker" id="history-kicker">沿途档案</div><h2 id="history-title"></h2></div><button type="button" class="history-close" id="history-close" aria-label="关闭历史档案">×</button></header><div class="history-scroll" id="history-scroll"><span class="history-era" id="history-era"></span><p class="history-dek" id="history-dek"></p><div class="history-prose" id="history-prose"></div><div class="history-source" id="history-source"></div></div><nav class="history-nav" aria-label="历史档案翻页"><button type="button" id="history-prev">← 上一站</button><span id="history-count"></span><button type="button" id="history-next">下一站 →</button></nav></section></div></div><aside class="route-panel"><div class="route-panel-head"><h3>20 个路线标记</h3><p>仅包含路线中的地点。点击名称或地图编号，打开完整历史档案。</p></div><div class="route-list" id="route-list"></div><div class="detail" id="route-detail"><div class="mini">按顺序浏览</div><h4>选择一处地点</h4><p>酒店 H 在地图中独立标出，不占路线编号。</p></div></aside></div></section><section class="stores" id="stores"><div class="stores-head"><div><span class="eyebrow">SEPARATE COLLECTION</span><h2>收藏店铺</h2></div><p>点击“地图定位”查看独立店铺标记；S 编号仅供查找。氹仔与路氹的店铺可在“店铺全览”中查看。</p></div><div id="store-groups"></div></section><section class="fireworks-section" id="fireworks"><div class="section-intro"><div><span class="eyebrow">2026 / FIREWORKS</span><h2>澳门烟花秀</h2></div><button type="button" class="view-fireworks" data-view-fireworks>查看烟花观赏地图 ↗</button></div><p class="fireworks-launch">燃放地点：澳门旅游塔对出海面。F 为海域示意，V1—V5 为观赏区域参考。</p><div class="fireworks-schedule" id="fireworks-schedule"></div><div id="firework-views" class="firework-views"></div><p class="fireworks-source">时间为澳门当地时间（UTC+8）。依据 <a href="https://www.macaotourism.gov.mo/zh-hans/events/whatson/13795/?month=10" target="_blank" rel="noreferrer">澳门旅游局官方节目表 ↗</a>，核对日期：2026-09-30。观赏区域根据收藏清单整理，活动安排与现场开放情况以主办方公告为准。</p></section><footer class="notes"><p>历史说明逐站附资料入口。地点参考：<a href="https://www.macaotourism.gov.mo/zh-hans/sightseeing/macao-world-heritage" target="_blank" rel="noreferrer">澳门旅游局世界遗产资料</a>与 OpenStreetMap 地名。地图数据 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>（ODbL）；建筑高度为可视化示意。</p><p>店铺 S、酒店 H 与烟花 F/V 独立标记，不参与文化路线排序。店址及营业情况可能变化，请打开实时地图核对。</p></footer></main><script src="./data/map.js"></script>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>澳门立体路线地图｜20 站城市漫游</title>
+  <meta name="description" content="澳门文化路线、独立店铺收藏与 2026 烟花观赏地图">
+  <link rel="stylesheet" href="./src/styles.css">
+</head>
+<body>
+<a class="skip-link" href="#map-panel">跳到地图与资料</a>
+<main class="wrap">
+  <header class="hero">
+    <div><div class="eyebrow">MACAO / ROUTE ATLAS</div><h1>澳门立体路线地图</h1><p>沿着 20 站读懂城市，在街巷里找一家店，再去海边看烟花。</p></div>
+    <a class="hotel-chip" href="https://all.accor.com/hotel/6480/index.zh.shtml" target="_blank" rel="noreferrer"><b>H</b><span>澳门十六浦索菲特酒店<small>独立酒店标记</small></span></a>
+  </header>
+  <section class="map-panel" id="map-panel" tabindex="-1" aria-label="地图与联动资料">
+    <nav class="workspace-nav" aria-label="浏览内容">
+      <div class="view-tabs" role="tablist" aria-label="地图与资料分类">
+        <button type="button" role="tab" id="tab-route" data-view="route" aria-controls="panel-route" aria-selected="true" tabindex="0">文化路线 <small>20 站</small></button>
+        <button type="button" role="tab" id="tab-shops" data-view="shops" aria-controls="stores" aria-selected="false" tabindex="-1">收藏店铺 <small>14 家</small></button>
+        <button type="button" role="tab" id="tab-fireworks" data-view="fireworks" aria-controls="fireworks" aria-selected="false" tabindex="-1">烟花观赏 <small>2026</small></button>
+      </div>
+      <span class="workspace-hint">选一个地点，展开它的故事</span>
+    </nav>
+    <div class="route-layout">
+      <div class="map-surface">
+        <div class="map-top">
+          <div class="map-context"><span class="map-caption" id="map-caption">妈阁庙 → 美高梅</span><div class="stage-tabs" role="group" aria-label="文化路线查看范围"><button type="button" class="active" data-stage="all" aria-pressed="true">全程</button><button type="button" data-stage="1" aria-pressed="false">南段 1–6</button><button type="button" data-stage="2" aria-pressed="false">老城 7–14</button><button type="button" data-stage="3" aria-pressed="false">东段 15–20</button></div></div>
+          <div class="map-tools"><button type="button" id="fullscreen-toggle" aria-label="全屏展开地图" aria-pressed="false">⛶ 全屏</button><label class="place-picker">选择地点<select id="map-place" aria-label="选择地图地点"><option value="">选择地点…</option></select></label></div>
+        </div>
+        <canvas id="route-map" tabindex="0" aria-label="澳门立体地图，可拖动、缩放；地点也可通过选择地点菜单访问"></canvas>
+        <div id="map-markers" class="map-markers"></div>
+        <section id="map-detail" class="map-detail detail" aria-label="选中地点详情" hidden><button type="button" id="map-detail-close" aria-label="关闭地点详情">×</button><div id="map-detail-body" aria-live="polite"></div></section>
+        <div class="map-bottom"><div class="map-legend"><span><b>●</b> 路线</span><span><b class="shop-key">■</b> 店铺 S</span><span><b class="hotel-key">■</b> 酒店 H</span><span><b class="firework-key">◆</b> 烟花 F / V</span></div><small>拖动平移 · 滚轮 / 双指缩放<br>路线连接表示顺序，步行请核对实时导航。</small></div>
+        <div class="controls" role="group" aria-label="地图视角"><button type="button" data-control="rotate" aria-label="旋转地图">↻</button><button type="button" data-control="tilt" aria-label="切换俯视角">2D</button><button type="button" data-control="minus" aria-label="缩小地图">−</button><button type="button" data-control="plus" aria-label="放大地图">＋</button><button type="button" data-control="reset" aria-label="重置地图视角">⌖</button></div>
+        <div class="history-overlay" id="history-overlay" hidden><section class="history-sheet" role="dialog" aria-modal="true" aria-labelledby="history-title"><header class="history-head"><div><div class="history-kicker" id="history-kicker">沿途档案</div><h2 id="history-title"></h2></div><button type="button" class="history-close" id="history-close" aria-label="关闭历史档案">×</button></header><div class="history-scroll" id="history-scroll"><span class="history-era" id="history-era"></span><p class="history-dek" id="history-dek"></p><div class="history-prose" id="history-prose"></div><div class="history-source" id="history-source"></div></div><nav class="history-nav" aria-label="历史档案翻页"><button type="button" id="history-prev">← 上一站</button><span id="history-count"></span><button type="button" id="history-next">下一站 →</button></nav></section></div>
+      </div>
+      <aside class="route-panel" aria-label="当前分类资料">
+        <section id="panel-route" class="content-panel" role="tabpanel" aria-labelledby="tab-route">
+          <header class="route-panel-head"><div class="eyebrow">HERITAGE WALK</div><h2>20 站城市漫游</h2><p>妈阁庙 → 美高梅，点击站点阅读历史。</p></header>
+          <div class="route-list" id="route-list"></div><div class="detail" id="route-detail"></div>
+        </section>
+        <section class="content-panel" id="stores" role="tabpanel" aria-labelledby="tab-shops" hidden>
+          <header class="route-panel-head"><div class="eyebrow shop-key">SEPARATE COLLECTION</div><h2>街巷与咖啡香</h2><p>14 家收藏，13 处地图标记。S 编号用于查找。</p></header>
+          <div class="panel-scroll" id="store-groups"></div>
+        </section>
+        <section class="content-panel" id="fireworks" role="tabpanel" aria-labelledby="tab-fireworks" hidden>
+          <header class="route-panel-head"><div class="eyebrow firework-key">2026 / FIREWORKS</div><h2>去海边看烟花</h2><p>燃放海域：澳门旅游塔对出海面 <button class="text-button" type="button" data-locate="firework-launch">定位 F ↗</button></p><div class="fireworks-schedule" id="fireworks-schedule"></div></header>
+          <div class="panel-scroll"><h3 class="list-heading">选一个观赏区域 <span>5 处</span></h3><div id="firework-views" class="firework-views"></div><p class="fireworks-source">澳门当地时间（UTC+8）。<a href="https://www.macaotourism.gov.mo/zh-hans/events/whatson/13795/?month=10" target="_blank" rel="noreferrer">澳门旅游局官方节目表 ↗</a><br>核对日期：2026-09-30。F 为海域示意，V 为区域参考；现场开放与活动安排以主办方公告为准。</p></div>
+        </section>
+      </aside>
+    </div>
+  </section>
+  <footer class="notes"><p>历史说明逐站附资料入口。地点参考：<a href="https://www.macaotourism.gov.mo/zh-hans/sightseeing/macao-world-heritage" target="_blank" rel="noreferrer">澳门旅游局世界遗产资料</a>与 OpenStreetMap 地名。地图数据 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>（ODbL）；建筑高度为可视化示意。</p><p>店铺 S、酒店 H 与烟花 F/V 独立标记，不参与文化路线排序。店址及营业情况可能变化，请打开实时地图核对。</p></footer>
+</main>
+<script src="./data/map.js"></script>
 <script src="./data/content.js"></script>
-<script src="./src/app.js"></script></body></html>
+<script src="./src/app.js"></script>
+</body>
+</html>
