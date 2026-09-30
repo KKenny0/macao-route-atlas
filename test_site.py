@@ -51,12 +51,13 @@ const nodes=new Map(), listeners=new Map();
 function element(){return {
  hidden:false, children:[], style:{}, dataset:{}, offsetHeight:80,
  classList:{toggle(){},add(){},remove(){}}, setAttribute(){}, focus(){}, scrollIntoView(){},
- addEventListener(){}, append(e){this.children.push(e)}, querySelectorAll(){return []},
+ addEventListener(name,fn){(this.listeners??=new Map()).set(name,fn)}, setPointerCapture(){}, append(e){this.children.push(e)}, querySelectorAll(){return []},
  getBoundingClientRect(){return {width:800,height:710}}, click(){this.onclick?.()}
 }}
 const get=id=>{if(!nodes.has(id))nodes.set(id,element());return nodes.get(id)};
-const ctx=new Proxy({createLinearGradient:()=>({addColorStop(){}})}, {get:(o,k)=>o[k]||(()=>{})});
-let size={width:800,height:710};
+const textDraws=[];
+const ctx=new Proxy({fillText:s=>textDraws.push(s),measureText:s=>({width:s.length*12}),createLinearGradient:()=>({addColorStop(){}})}, {get:(o,k)=>o[k]||(()=>{})});
+let size={width:800,height:710,left:0,top:0};
 get('route-map').getContext=()=>ctx;
 get('route-map').getBoundingClientRect=()=>size;
 get('history-overlay').hidden=true;
@@ -65,16 +66,23 @@ const surface=element();surface.children=get('map-panel').children;
 const stageTabs=element(), nav=element(), sidebar=element();
 const tabs=['route','shops','fireworks'].map(view=>{const e=element();e.dataset.view=view;return e});
 const rows=Array.from({length:20},(_,i)=>{const e=element();e.dataset.routeId=String(i+1);return e});
-const document={getElementById:get,createElement:element,querySelector:s=>s==='.map-surface'?surface:s==='.stage-tabs'?stageTabs:s==='.workspace-nav'?nav:s==='.route-panel'?sidebar:element(),querySelectorAll:s=>s==='[data-view]'?tabs:s==='.route-row'?rows:[],body:element(),activeElement:element(),fullscreenEnabled:false,
+const controls=['rotate','tilt','minus','plus','reset'].map(control=>{const e=element();e.dataset.control=control;return e});
+const document={getElementById:get,createElement:element,querySelector:s=>s==='.map-surface'?surface:s==='.stage-tabs'?stageTabs:s==='.workspace-nav'?nav:s==='.route-panel'?sidebar:element(),querySelectorAll:s=>s==='[data-view]'?tabs:s==='.route-row'?rows:s==='.controls button'?controls:[],body:element(),activeElement:element(),fullscreenEnabled:false,
  addEventListener(name,fn){if(!listeners.has(name))listeners.set(name,[]);listeners.get(name).push(fn)}};
-const sandbox={document,console,size,ResizeObserver:class{observe(){}},devicePixelRatio:1,requestAnimationFrame:()=>0};
+const sandbox={document,console,size,controls,tabs,textDraws,ResizeObserver:class{observe(){}},devicePixelRatio:1,requestAnimationFrame:()=>0};
 vm.createContext(sandbox);
 for(const file of ['data/map.js','data/content.js','src/app.js'])vm.runInContext(fs.readFileSync(file,'utf8'),sandbox);
 vm.runInContext(`
  resize();
+ if(!textDraws.some(text=>atlas.labels.some(label=>label.name===text)))throw Error('Geographic labels were not rendered');
+ const oldNorth=document.getElementById('north-needle').style.transform;
+ controls.find(b=>b.dataset.control==='rotate').click();
+ if(document.getElementById('north-needle').style.transform===oldNorth)throw Error('North indicator did not follow rotation');
+ reset();
+ const representedShops=()=>hits.flatMap(h=>h.members||[h.id]).filter(id=>String(id).startsWith('shop-'));
  for(const v of ['all','1','2','3','shops','fireworks']){
    setStage(v);const c=camera();if(!Number.isFinite(c.scale)||c.scale<=0)throw Error('Invalid camera: '+v);
-   if(v==='shops'&&hits.filter(h=>String(h.id).startsWith('shop-')).length!==mappedShops.length)throw Error('Store overview clipped markers');
+   if(v==='shops'&&new Set(representedShops()).size!==mappedShops.length)throw Error('Store overview clipped markers');
    const view=v==='shops'||v==='fireworks'?v:'route';
    for(const [name,id] of [['route','panel-route'],['shops','stores'],['fireworks','fireworks']]){
      if(document.getElementById(id).hidden!==(name!==view))throw Error('Wrong linked panel: '+v);
@@ -88,10 +96,10 @@ vm.runInContext(`
    size.width=width;size.height=height;resize();
    for(const view of ['all','shops','fireworks']){
      setStage(view);
-     const count=view==='all'?hits.filter(h=>typeof h.id==='number').length:view==='shops'?hits.filter(h=>String(h.id).startsWith('shop-')).length:hits.filter(h=>String(h.id).startsWith('view-')).length;
+     const count=view==='all'?hits.filter(h=>typeof h.id==='number').length:view==='shops'?representedShops().length:hits.filter(h=>String(h.id).startsWith('view-')).length;
      if(count!==(view==='all'?20:view==='shops'?mappedShops.length:5))throw Error('Clipped markers at '+width+' / '+view);
      if(hits.filter(h=>typeof h.id==='number').length!==20)throw Error('Route reference clipped at '+width+' / '+view);
-     const buttons=hits.filter(h=>!markerButtons.get(h.id).hidden);
+     const buttons=hits.filter(h=>h.members||!markerButtons.get(h.id).hidden);
      for(let i=0;i<buttons.length;i++)for(let j=i+1;j<buttons.length;j++){
        if(Math.hypot(buttons[i].x-buttons[j].x,buttons[i].y-buttons[j].y)<39.9)throw Error('Overlapping marker targets at '+width+' / '+view);
      }
@@ -99,6 +107,30 @@ vm.runInContext(`
  }
  size.width=800;size.height=710;resize();
  for(const s of mappedShops){locate(s.id);if(selected!==s.id||!hits.some(h=>h.id===s.id))throw Error('Store not reachable: '+s.id);if(zoom!==1||hits.filter(h=>typeof h.id==='number').length!==20)throw Error('Store selection lost route context')}
+ const emit=(name,e={})=>canvas.listeners.get(name)({preventDefault(){},...e});
+ for(const input of ['buttons','wheel','keyboard','pinch']){
+   zoom=.31;
+   const change=up=>{
+     if(input==='buttons')controls.find(b=>b.dataset.control===(up?'plus':'minus')).click();
+     if(input==='wheel')emit('wheel',{deltaY:up?-100:100});
+     if(input==='keyboard')emit('keydown',{key:up?'+':'-'});
+     if(input==='pinch'){
+       pointers.clear();pointers.set(1,{x:100,y:200});pointers.set(2,{x:200,y:200});pinch={dist:100,mid:{x:150,y:200}};
+       emit('pointermove',{pointerId:2,clientX:up?300:150,clientY:200});pointers.clear();pinch=null;
+     }
+   };
+   change(false);if(zoom!==.3)throw Error('Zoom-out limit differs for '+input);
+   zoom=7.99;change(true);if(zoom!==8)throw Error('Zoom-in limit differs for '+input);
+ }
+ setStage('shops');setZoom(.3);draw();
+ tabs[1].listeners.get('keydown')({key:'Home',ctrlKey:true,preventDefault(){throw Error('Modified Home intercepted')}});
+ if(stage!=='shops')throw Error('Modified Home switched category');
+ if(new Set(representedShops()).size!==mappedShops.length||!hits.some(h=>h.members))throw Error('Low-zoom collection lost a shop or aggregation');
+ const oldZoom=zoom;clusterButtons.find(b=>!b.hidden).click();if(zoom<=oldZoom||stage!=='shops')throw Error('Cluster did not expand');
+ setZoom(2.4);panX=5000;panY=5000;locate(mappedShops[0].id);
+ if(zoom!==2.4||!hits.some(h=>h.id===mappedShops[0].id))throw Error('Locating an offscreen shop reset zoom or failed to reveal it');
+ setZoom(8);draw();if(shopGroups(camera()).some(g=>g.length>1))throw Error('Clusters cannot fully expand at maximum zoom');
+ if(atlas.labels.length<8||!atlas.labels.every(s=>Number.isFinite(s.lat)&&Number.isFinite(s.lon)))throw Error('Missing geographic labels');
  setStage('fireworks');openHistory(13);closeHistory();if(stage!=='fireworks')throw Error('Reading a reference station changed the overlay');
  setStage('all');openHistory(13);
  if(historyOverlay.hidden||historyOpenId!==13)throw Error('History did not open');

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>澳门立体路线地图｜20 站城市漫游</title>
   <meta name="description" content="澳门文化路线、独立店铺收藏与 2026 烟花观赏地图">
-  <link rel="stylesheet" href="./src/styles.css?v=route-reference-1">
+  <link rel="stylesheet" href="./src/styles.css?v=geography-1">
 </head>
 <body>
 <a class="skip-link" href="#map-panel">跳到地图与资料</a>
@@ -30,6 +30,7 @@
           <div class="map-tools"><button type="button" id="fullscreen-toggle" aria-label="全屏展开地图" aria-pressed="false">⛶ 全屏</button><label class="place-picker">选择地点<select id="map-place" aria-label="选择地图地点"><option value="">选择地点…</option></select></label></div>
         </div>
         <canvas id="route-map" tabindex="0" aria-label="澳门立体地图，可拖动、缩放；地点也可通过选择地点菜单访问"></canvas>
+        <div class="map-compass" aria-label="北向指示"><span>北 N</span><b id="north-needle" aria-hidden="true">↑</b></div>
         <div id="map-markers" class="map-markers"></div>
         <section id="map-detail" class="map-detail detail" aria-label="选中地点详情" hidden><button type="button" id="map-detail-close" aria-label="关闭地点详情">×</button><div id="map-detail-body" aria-live="polite"></div></section>
         <div class="map-bottom"><div class="map-legend"><span><b>●</b> 路线</span><span><b class="shop-key">■</b> 店铺 S</span><span><b class="hotel-key">■</b> 酒店 H</span><span><b class="firework-key">◆</b> 烟花 F / V</span></div><small>拖动平移 · 滚轮 / 双指缩放<br>路线连接表示顺序，步行请核对实时导航。</small></div>
@@ -42,7 +43,7 @@
           <div class="route-list" id="route-list"></div><div class="detail" id="route-detail"></div>
         </section>
         <section class="content-panel" id="stores" role="tabpanel" aria-labelledby="tab-shops" hidden>
-          <header class="route-panel-head"><div class="eyebrow shop-key">SEPARATE COLLECTION</div><h2>街巷与咖啡香</h2><p>14 家收藏，13 处地图标记。S 编号用于查找。</p></header>
+          <header class="route-panel-head"><div class="eyebrow shop-key">SEPARATE COLLECTION</div><h2>街巷与咖啡香</h2><p>14 家收藏，13 处已定位。数量标记可点击展开，S 编号用于查找。</p></header>
           <div class="panel-scroll" id="store-groups"></div>
         </section>
         <section class="content-panel" id="fireworks" role="tabpanel" aria-labelledby="tab-fireworks" hidden>
@@ -54,8 +55,8 @@
   </section>
   <footer class="notes"><p>历史说明逐站附资料入口。地点参考：<a href="https://www.macaotourism.gov.mo/zh-hans/sightseeing/macao-world-heritage" target="_blank" rel="noreferrer">澳门旅游局世界遗产资料</a>与 OpenStreetMap 地名。地图数据 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>（ODbL）；建筑高度为可视化示意。</p><p>店铺 S、酒店 H 与烟花 F/V 独立标记，不参与文化路线排序。店址及营业情况可能变化，请打开实时地图核对。</p></footer>
 </main>
-<script src="./data/map.js"></script>
+<script src="./data/map.js?v=geography-1"></script>
 <script src="./data/content.js"></script>
-<script src="./src/app.js?v=route-reference-1"></script>
+<script src="./src/app.js?v=geography-1"></script>
 </body>
 </html>
