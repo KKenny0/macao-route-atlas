@@ -81,6 +81,7 @@ vm.runInContext(`
    }
    if(view==='route'&&hits.some(h=>String(h.id).startsWith('shop-')))throw Error('Route markers mixed with shop view');
    if(view==='route'&&document.querySelectorAll('.route-row').filter(r=>!r.hidden).length!==active().length)throw Error('Route segment list mismatch');
+   if(view!=='route'&&hits.filter(h=>typeof h.id==='number').length!==20)throw Error('Missing route reference: '+v);
  }
  if(hits.filter(h=>String(h.id).startsWith('view-')).length!==5)throw Error('Missing viewing marker');
  for(const [width,height] of [[320,400],[375,400],[760,600],[800,710]]){
@@ -89,13 +90,16 @@ vm.runInContext(`
      setStage(view);
      const count=view==='all'?hits.filter(h=>typeof h.id==='number').length:view==='shops'?hits.filter(h=>String(h.id).startsWith('shop-')).length:hits.filter(h=>String(h.id).startsWith('view-')).length;
      if(count!==(view==='all'?20:view==='shops'?mappedShops.length:5))throw Error('Clipped markers at '+width+' / '+view);
-     for(let i=0;i<hits.length;i++)for(let j=i+1;j<hits.length;j++){
-       if(Math.hypot(hits[i].x-hits[j].x,hits[i].y-hits[j].y)<39.9)throw Error('Overlapping marker targets at '+width+' / '+view);
+     if(hits.filter(h=>typeof h.id==='number').length!==20)throw Error('Route reference clipped at '+width+' / '+view);
+     const buttons=hits.filter(h=>!markerButtons.get(h.id).hidden);
+     for(let i=0;i<buttons.length;i++)for(let j=i+1;j<buttons.length;j++){
+       if(Math.hypot(buttons[i].x-buttons[j].x,buttons[i].y-buttons[j].y)<39.9)throw Error('Overlapping marker targets at '+width+' / '+view);
      }
    }
  }
  size.width=800;size.height=710;resize();
- for(const s of mappedShops){locate(s.id);if(selected!==s.id||!hits.some(h=>h.id===s.id))throw Error('Store not reachable: '+s.id)}
+ for(const s of mappedShops){locate(s.id);if(selected!==s.id||!hits.some(h=>h.id===s.id))throw Error('Store not reachable: '+s.id);if(zoom!==1||hits.filter(h=>typeof h.id==='number').length!==20)throw Error('Store selection lost route context')}
+ setStage('fireworks');openHistory(13);closeHistory();if(stage!=='fireworks')throw Error('Reading a reference station changed the overlay');
  setStage('all');openHistory(13);
  if(historyOverlay.hidden||historyOpenId!==13)throw Error('History did not open');
  if(!document.querySelector('.workspace-nav').inert||!document.querySelector('.route-panel').inert)throw Error('History background remained interactive');

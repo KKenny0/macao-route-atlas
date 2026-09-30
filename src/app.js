@@ -15,9 +15,9 @@ const streets=atlas.roads;
 const shores=atlas.coasts;
 const buildings=atlas.buildings.map(b=>({p:b[0],h:b[1],y:b[0].reduce((a,q)=>a+q[1],0)/b[0].length})).sort((a,b)=>b.y-a.y);
 let selected=1,stage='all';const canvas=document.getElementById('route-map'),ctx=canvas.getContext('2d');let W=0,H=0,dpr=1,angle=-.16,zoom=1,tilted=true,panX=0,panY=0,pending=0,hits=[],pointers=new Map(),tap=null,pinch=null;
-const active=()=>stage==='all'?route:route.filter(s=>s.stage===Number(stage));
+const active=()=>['all','shops','fireworks'].includes(stage)?route:route.filter(s=>s.stage===Number(stage));
 function camera(){
- const pts=(stage==='shops'?mappedShops:stage==='fireworks'?fireworkPlaces:active()).map(s=>s.p);
+ const pts=(stage==='shops'?[...route,hotel,...mappedShops]:stage==='fireworks'?[...route,hotel,...fireworkPlaces]:active()).map(s=>s.p);
  if(stage==='all')pts.push(hotel.p);
  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
  const C={center:[(Math.min(...xs)+Math.max(...xs))/2,(Math.min(...ys)+Math.max(...ys))/2],scale:1,tilt:tilted?.54:0};
@@ -62,13 +62,29 @@ function draw(){if(!W)return;const C=camera();ctx.setTransform(dpr,0,0,dpr,0,0);
  for(const [r,p] of streets){path(p,0,C);ctx.lineCap='round';ctx.lineJoin='round';const width=r<2?Math.max(2,7*C.scale):r<4?Math.max(1,4*C.scale):Math.max(.5,2*C.scale);if(r<3){ctx.lineWidth=width+2;ctx.strokeStyle='#193b47';ctx.stroke()}ctx.lineWidth=width;ctx.strokeStyle=r<2?'#698080':r<4?'#3f626a':'#274954';ctx.stroke()}
  for(const p of shores){path(p,0,C);ctx.lineWidth=2;ctx.strokeStyle='#54848a';ctx.stroke()}
  for(const b of buildings){let p=b.p;if(p.length<4)continue;let bottom=p.map(q=>project(q,0,C)),top=p.map(q=>project(q,b.h,C));for(let i=0;i<p.length-1;i++){ctx.beginPath();ctx.moveTo(bottom[i][0],bottom[i][1]);ctx.lineTo(bottom[i+1][0],bottom[i+1][1]);ctx.lineTo(top[i+1][0],top[i+1][1]);ctx.lineTo(top[i][0],top[i][1]);ctx.closePath();ctx.fillStyle=i%2?'rgba(72,106,108,.80)':'rgba(40,76,86,.85)';ctx.fill()}ctx.beginPath();top.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.closePath();ctx.fillStyle='rgba(180,199,172,.62)';ctx.fill();ctx.strokeStyle='rgba(201,217,189,.22)';ctx.lineWidth=.5;ctx.stroke()}
- let seq=active();ctx.beginPath();seq.forEach((s,i)=>{let q=project(s.p,30,C);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])});ctx.strokeStyle='#c9eb86';ctx.globalAlpha=.13;ctx.lineWidth=10;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();ctx.globalAlpha=.95;ctx.setLineDash([7,5]);ctx.lineWidth=2.7;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+ const reference=stage==='shops'||stage==='fireworks',seq=active();
+ ctx.beginPath();seq.forEach((s,i)=>{let q=project(s.p,reference?0:30,C);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])});ctx.strokeStyle='#c9eb86';ctx.globalAlpha=.13;ctx.lineWidth=10;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();ctx.globalAlpha=reference?.7:.95;ctx.setLineDash([7,5]);ctx.lineWidth=2.7;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
  if(stage==='fireworks'){
    path(fireworks.views[4].coast.map(p=>toWorld(...p)),0,C);
    ctx.strokeStyle='#d8b9ff';ctx.lineWidth=5;ctx.stroke();
  }
- hits=[];const used=[];
- const visible=[...seq,hotel,...(stage==='fireworks'?fireworkPlaces:stage==='shops'?mappedShops:[])];
+ hits=[];const used=reference?seq.map(s=>project(s.p,0,C)):[];
+ const visible=[...(reference?[]:seq),hotel,...(stage==='fireworks'?fireworkPlaces:stage==='shops'?mappedShops:[])];
+ if(reference){
+   // Keep route dots at their geographic positions; labels appear where the current zoom gives them room.
+   const points=seq.map(s=>project(s.p,0,C));
+   points.forEach((q,i)=>{
+     if(q[0]<0||q[0]>W||q[1]<0||q[1]>H)return;
+     const s=seq[i],space=points.every((p,j)=>i===j||Math.hypot(p[0]-q[0],p[1]-q[1])>22);
+     ctx.beginPath();ctx.arc(q[0],q[1],selected===s.id?5:3,0,Math.PI*2);ctx.fillStyle='#c9eb86';ctx.fill();
+     if(space||s.id===1||s.id===20){
+       const label=s.id===1?'1 · 妈阁庙':s.id===20?'20 · 美高梅':String(s.id);
+       const x=q[0]+(s.id===1?-7:7);
+       ctx.font='600 11px system-ui';ctx.textAlign=s.id===1?'right':'left';ctx.textBaseline='middle';ctx.lineWidth=3;ctx.strokeStyle='#102c38';ctx.strokeText(label,x,q[1]);ctx.fillText(label,x,q[1]);
+     }
+     hits.push({id:s.id,x:q[0],y:q[1]});
+   });
+ }
  for(const button of markerButtons.values())button.hidden=true;
  for(const s of visible){
    const foot=project(s.p,0,C),origin=project(s.p,62,C);
@@ -104,8 +120,6 @@ function locate(id){
  const s=allPlaces.find(x=>String(x.id)===String(id));if(!s)return;
  if(typeof s.id==='number'){openHistory(s.id);return}
  setStage(s.kind==='shop'?'shops':s.kind==='firework'?'fireworks':'all');
- if(s.kind==='shop')zoom=2.2;
- const q=project(s.p,62,camera());panX=W*.43-q[0];panY=H*.44-q[1];
  select(s.id,true);
  // The map and list already share a workspace; selecting a place keeps the page still.
  document.getElementById('map-detail-close').focus({preventScroll:true});
@@ -123,7 +137,7 @@ function setStage(v){
  document.querySelectorAll('[data-view]').forEach(b=>{const on=b.dataset.view===view;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1});
  for(const [name,id] of [['route','panel-route'],['shops','stores'],['fireworks','fireworks']])document.getElementById(id).hidden=name!==view;
  document.querySelector('.stage-tabs').hidden=view!=='route';
- document.getElementById('map-caption').textContent=view==='shops'?'澳门半岛 · 氹仔 · 路氹':view==='fireworks'?'旅游塔海域 · 5 处观赏区域':'妈阁庙 → 美高梅';
+ document.getElementById('map-caption').textContent=view==='shops'?'文化路线 + 收藏店铺':view==='fireworks'?'文化路线 + 烟花观赏':'妈阁庙 → 美高梅';
  document.querySelectorAll('.stage-tabs button').forEach(b=>{b.classList.toggle('active',b.dataset.stage===v);b.setAttribute('aria-pressed',String(b.dataset.stage===v))});
  document.querySelectorAll('.route-row').forEach(b=>b.hidden=view==='route'&&v!=='all'&&route[Number(b.dataset.routeId)-1].stage!==Number(v));
  select(v==='shops'?mappedShops[0].id:v==='fireworks'?fireworks.launch.id:active()[0].id);
@@ -142,7 +156,7 @@ canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.65,Math.mi
 
 const historyOverlay=document.getElementById('history-overlay');let historyOpenId=null,historyReturnFocus=null;
 function renderHistory(id){const s=route[id-1];if(!s)return;historyOpenId=id;document.getElementById('history-kicker').textContent=`沿途档案 · ${String(id).padStart(2,'0')} / 20 · ${stageNames[s.stage]}`;document.getElementById('history-title').textContent=s.name;document.getElementById('history-era').textContent=s.era;document.getElementById('history-dek').textContent=s.dek;document.getElementById('history-prose').innerHTML=s.story.map(p=>`<p>${p}</p>`).join('');document.getElementById('history-source').innerHTML=`资料来源：<a href="${s.source}" target="_blank" rel="noreferrer">${s.sourceLabel} ↗</a><br>文字据资料整理；街道与现代酒店的沿革按各自来源表述。`;document.getElementById('history-count').textContent=`${String(id).padStart(2,'0')} / 20`;document.getElementById('history-prev').disabled=id===1;document.getElementById('history-next').disabled=id===20;document.getElementById('history-scroll').scrollTop=0}
-function openHistory(id){const s=route[id-1];if(!s)return;const firstOpen=historyOverlay.hidden;if(firstOpen)historyReturnFocus=document.activeElement;if(stage!=='all'&&stage!==String(s.stage))setStage(String(s.stage));select(id);renderHistory(id);[...document.querySelector('.map-surface').children].filter(e=>e!==historyOverlay).forEach(e=>e.inert=true);document.querySelector('.workspace-nav').inert=true;document.querySelector('.route-panel').inert=true;historyOverlay.hidden=false;document.body.classList.add('history-active');if(firstOpen)document.getElementById('history-close').focus()}
+function openHistory(id){const s=route[id-1];if(!s)return;const firstOpen=historyOverlay.hidden;if(firstOpen)historyReturnFocus=document.activeElement;if(!['all','shops','fireworks'].includes(stage)&&stage!==String(s.stage))setStage(String(s.stage));select(id);renderHistory(id);[...document.querySelector('.map-surface').children].filter(e=>e!==historyOverlay).forEach(e=>e.inert=true);document.querySelector('.workspace-nav').inert=true;document.querySelector('.route-panel').inert=true;historyOverlay.hidden=false;document.body.classList.add('history-active');if(firstOpen)document.getElementById('history-close').focus()}
 function closeHistory(){if(historyOverlay.hidden)return;historyOverlay.hidden=true;[...document.querySelector('.map-surface').children].forEach(e=>e.inert=false);document.querySelector('.workspace-nav').inert=false;document.querySelector('.route-panel').inert=false;historyOpenId=null;document.body.classList.remove('history-active');historyReturnFocus?.focus?.()}
 document.getElementById('history-close').onclick=closeHistory;
 historyOverlay.addEventListener('click',e=>{if(e.target===historyOverlay)closeHistory()});
