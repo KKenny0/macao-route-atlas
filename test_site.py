@@ -11,7 +11,7 @@ ROOT = Path(__file__).parent
 def test_public_page():
     html = (ROOT / "index.html").read_text(encoding="utf-8")
     for asset in re.findall(r'(?:src|href)="(\./(?:data|src)/[^"]+)"', html):
-        assert (ROOT / asset).is_file()
+        assert (ROOT / asset.split("?", 1)[0]).is_file()
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     preview = re.search(r'!\[[^]]+\]\((assets/[^)]+)\)', readme)
     assert preview and (ROOT / preview.group(1)).is_file()
